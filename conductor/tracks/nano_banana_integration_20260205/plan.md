@@ -7,9 +7,9 @@
     - [x] Write tests for API client (Red Phase)
     - [x] Implement API client to interact with Nano Banana API (Green Phase)
 - [x] Task: Create ImageProvider interface [d46580b]
-- [~] Task: Integrate API client with `ImageProvider` interface
-    - [ ] Write tests for ImageProvider integration (Red Phase)
-    - [ ] Implement adapter for Nano Banana API to conform to `ImageProvider` (Green Phase)
+- [x] Task: Integrate API client with `ImageProvider` interface [7f3fbf6]
+    - [x] Write tests for ImageProvider integration (Red Phase)
+    - [x] Implement adapter for Nano Banana API to conform to `ImageProvider` (Green Phase)
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: API Client and Service Integration' (Protocol in workflow.md)
 
 ## Phase 2: User Interface Integration
