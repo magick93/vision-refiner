@@ -1,7 +1,7 @@
 # Plan: Integrate Google Nano Banana API for Image Generation
 
 ## Phase 1: API Client and Service Integration
-- [ ] Task: Research Google Nano Banana API documentation
+- [~] Task: Research Google Nano Banana API documentation
     - [ ] Explore API endpoints, authentication, and request/response formats.
 - [ ] Task: Implement Nano Banana API client
     - [ ] Write tests for API client (Red Phase)
