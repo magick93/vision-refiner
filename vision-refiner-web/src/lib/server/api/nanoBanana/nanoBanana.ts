@@ -79,6 +79,8 @@ export class NanoBananaProvider implements ImageProvider {
     console.log('Analyzing image (mock)');
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 500));
+
+    console.log('Received image for analysis');
     
     // Return a realistic mock analysis
     return {
@@ -96,17 +98,102 @@ export class NanoBananaProvider implements ImageProvider {
   }
 
   async editImage(sourceImage: Blob | string, prompt: string): Promise<ImageGenerationResult> {
-    // Mock implementation for MVP
-    console.log(`Editing image with prompt: "${prompt}" (mock)`);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // For mock, we return a data URL of a placeholder image
-    // In a real implementation, this would call the Gemini API
-    const placeholderImageUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iIzAwN2JmZiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiNmZmYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5FZGl0ZWQgSW1hZ2U8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI1NSUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjEuMmVtIj5Qcm9tcHQ6ICZxdW90O3twcm9tcHR9JnF1b3Q7PC90ZXh0Pjwvc3ZnPg==';
-    
-    return {
-      success: true,
-      imageUrl: placeholderImageUrl,
-    };
+    try {
+      // Logging to validate assumptions about parameters
+      console.log(`[DEBUG] editImage called with prompt: "${prompt}"`);
+      console.log(`[DEBUG] sourceImage type: ${typeof sourceImage}, is Blob: ${sourceImage instanceof Blob}`);
+      
+      // Convert source image to base64 data for API
+      let imageData: string;
+      let mimeType: string;
+      
+      if (typeof sourceImage === 'string') {
+        console.log(`[DEBUG] sourceImage is string, length: ${sourceImage.length}`);
+        // Extract base64 data from data URL
+        const dataUrlMatch = sourceImage.match(/^data:(image\/[^;]+);base64,(.+)$/);
+        if (!dataUrlMatch) {
+          console.error(`[DEBUG] Invalid data URL format: ${sourceImage.substring(0, 100)}...`);
+          return {
+            imageUrl: '',
+            success: false,
+            error: 'Invalid image format. Expected data URL with base64 encoded image.',
+          };
+        }
+        mimeType = dataUrlMatch[1];
+        imageData = dataUrlMatch[2];
+        console.log(`[DEBUG] Extracted mimeType: ${mimeType}, data length: ${imageData.length}`);
+      } else {
+        console.log(`[DEBUG] sourceImage is Blob, size: ${sourceImage.size}, type: ${sourceImage.type}`);
+        // Convert Blob to base64
+        const arrayBuffer = await sourceImage.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        imageData = buffer.toString('base64');
+        mimeType = sourceImage.type || 'image/png';
+        console.log(`[DEBUG] Converted Blob to base64, data length: ${imageData.length}`);
+      }
+      
+      // Call Gemini API for image editing
+      console.log(`[DEBUG] Calling Gemini API for image editing with model: ${this.model}`);
+      const response = await this.ai.models.generateContent({
+        model: this.model,
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { inlineData: { data: imageData, mimeType } },
+              { text: prompt },
+            ],
+          },
+        ],
+        config: {
+          responseModalities: ['IMAGE'],
+          imageConfig: {
+            aspectRatio: this.aspectRatio,
+          },
+        },
+      });
+
+      // Check if we have a candidate with image data
+      const candidate = response.candidates?.[0];
+      if (!candidate?.content?.parts) {
+        console.error(`[DEBUG] No valid response candidate from API: ${JSON.stringify(response)}`);
+        return {
+          imageUrl: '',
+          success: false,
+          error: 'No valid response candidate from API',
+        };
+      }
+
+      // Look for image data in the response parts
+      for (const part of candidate.content.parts) {
+        if (part.inlineData?.data) {
+          // Convert base64 image data to a data URL
+          const editedImageData = part.inlineData.data;
+          const editedMimeType = part.inlineData.mimeType || 'image/png';
+          const dataUrl = `data:${editedMimeType};base64,${editedImageData}`;
+          
+          console.log(`[DEBUG] Successfully edited image, data URL length: ${dataUrl.length}`);
+          return {
+            imageUrl: dataUrl,
+            success: true,
+          };
+        }
+      }
+
+      // If we get here, no image was found in the response
+      console.error(`[DEBUG] No image data in API response: ${JSON.stringify(candidate.content.parts)}`);
+      return {
+        imageUrl: '',
+        success: false,
+        error: 'No image data in API response',
+      };
+    } catch (error: any) {
+      console.error('[DEBUG] Nano Banana API error during image editing:', error);
+      return {
+        imageUrl: '',
+        success: false,
+        error: error.message || 'An unknown error occurred while editing image',
+      };
+    }
   }
 }

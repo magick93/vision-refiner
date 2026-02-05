@@ -33,6 +33,8 @@ export const analyzeImage = command('unchecked', async (image: Blob | string) =>
   }
 
   const result: AnalysisResult = await provider.analyzeImage(image);
+
+  console.log('Analysis result:', result);
   
   if (!result.success) {
     throw new Error(result.error || 'Failed to analyze image');

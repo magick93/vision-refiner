@@ -66,6 +66,7 @@ const analyzeImageService = fromPromise(async ({ input }: { input: { image: Blob
 });
 
 const editImageService = fromPromise(async ({ input }: { input: { sourceImage: Blob | string; prompt: string } }) => {
+  console.log('Editing image with prompt:', input.prompt);
   const sourceImageForRemote = await prepareImageForRemote(input.sourceImage);
   const result = await editImage({ sourceImage: sourceImageForRemote, prompt: input.prompt });
   return result;
@@ -91,78 +92,107 @@ export const imagePipelineMachine = createMachine({
   },
   states: {
     idle: {
+      entry: ['logStateEntry'],
       on: {
         UPLOAD: {
           target: 'uploading',
-          actions: assign({
-            originalImage: ({ event }) => event.image,
-            currentImage: ({ event }) => event.image,
-          }),
+          actions: [
+            assign({
+              originalImage: ({ event }) => event.image,
+              currentImage: ({ event }) => event.image,
+            }),
+            'logTransition',
+          ],
         },
         GENERATE: {
           target: 'generating',
-          actions: assign({
-            currentPrompt: ({ event }) => event.prompt,
-          }),
+          actions: [
+            assign({
+              currentPrompt: ({ event }) => event.prompt,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     uploading: {
+      entry: ['logStateEntry'],
       invoke: {
         src: uploadImageService,
         input: ({ context }) => ({ image: context.originalImage }),
         onDone: {
           target: 'analyzing',
-          actions: assign({
-            currentImage: ({ event }) => event.output,
-          }),
+          actions: [
+            assign({
+              currentImage: ({ event }) => event.output,
+            }),
+            'logTransition',
+          ],
         },
         onError: {
           target: 'idle',
-          actions: assign({
-            lastError: ({ event }) => (event.error as Error).message,
-          }),
+          actions: [
+            assign({
+              lastError: ({ event }) => (event.error as Error).message,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     generating: {
+      entry: ['logStateEntry'],
       invoke: {
         src: generateImageService,
         input: ({ context }) => ({ prompt: context.currentPrompt || '' }),
         onDone: {
           target: 'analyzing',
-          actions: assign({
-            currentImage: ({ event }) => event.output.imageUrl,
-            generationResult: ({ event }) => event.output,
-          }),
+          actions: [
+            assign({
+              currentImage: ({ event }) => event.output.imageUrl,
+              generationResult: ({ event }) => event.output,
+            }),
+            'logTransition',
+          ],
         },
         onError: {
           target: 'idle',
-          actions: assign({
-            lastError: ({ event }) => (event.error as Error).message,
-          }),
+          actions: [
+            assign({
+              lastError: ({ event }) => (event.error as Error).message,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     analyzing: {
+      entry: ['logStateEntry'],
       invoke: {
         src: analyzeImageService,
         input: ({ context }) => ({ image: context.currentImage }),
         onDone: {
           target: 'suggesting',
-          actions: assign({
-            analysisResult: ({ event }) => event.output,
-          }),
+          actions: [
+            assign({
+              analysisResult: ({ event }) => event.output,
+            }),
+            'logTransition',
+          ],
         },
         onError: {
           target: 'idle',
-          actions: assign({
-            lastError: ({ event }) => (event.error as Error).message,
-          }),
+          actions: [
+            assign({
+              lastError: ({ event }) => (event.error as Error).message,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     suggesting: {
+      entry: ['logStateEntry'],
       // This state could show suggestions to the user
       // For now, auto‑transition to editing after a short delay
       after: {
@@ -171,36 +201,47 @@ export const imagePipelineMachine = createMachine({
       on: {
         EDIT: {
           target: 'editing',
-          actions: assign({
-            currentPrompt: ({ event }) => event.prompt,
-          }),
+          actions: [
+            assign({
+              currentPrompt: ({ event }) => event.prompt,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     editing: {
+      entry: ['logStateEntry'],
       // Wait for user to confirm edit or provide a new prompt
       on: {
         EDIT: {
           target: 'processing_edit',
-          actions: assign({
-            currentPrompt: ({ event }) => event.prompt,
-          }),
+          actions: [
+            assign({
+              currentPrompt: ({ event }) => event.prompt,
+            }),
+            'logTransition',
+          ],
         },
         RESET: {
           target: 'idle',
-          actions: assign({
-            originalImage: undefined,
-            currentImage: undefined,
-            history: [],
-            lastError: undefined,
-            currentPrompt: undefined,
-            analysisResult: undefined,
-            generationResult: undefined,
-          }),
+          actions: [
+            assign({
+              originalImage: undefined,
+              currentImage: undefined,
+              history: [],
+              lastError: undefined,
+              currentPrompt: undefined,
+              analysisResult: undefined,
+              generationResult: undefined,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     processing_edit: {
+      entry: ['logStateEntry'],
       invoke: {
         src: editImageService,
         input: ({ context }) => ({
@@ -209,44 +250,74 @@ export const imagePipelineMachine = createMachine({
         }),
         onDone: {
           target: 'review',
-          actions: assign({
-            currentImage: ({ event }) => event.output.imageUrl,
-            generationResult: ({ event }) => event.output,
-          }),
+          actions: [
+            assign({
+              currentImage: ({ event }) => event.output.imageUrl,
+              generationResult: ({ event }) => event.output,
+            }),
+            'logTransition',
+          ],
         },
         onError: {
           target: 'editing',
-          actions: assign({
-            lastError: ({ event }) => (event.error as Error).message,
-          }),
+          actions: [
+            assign({
+              lastError: ({ event }) => (event.error as Error).message,
+            }),
+            'logTransition',
+          ],
         },
       },
     },
     review: {
+      entry: ['logStateEntry'],
       // User can decide to keep editing or finish
       on: {
         EDIT: {
           target: 'editing',
-          actions: assign({
-            currentPrompt: ({ event }) => event.prompt,
-          }),
+          actions: [
+            assign({
+              currentPrompt: ({ event }) => event.prompt,
+            }),
+            'logTransition',
+          ],
         },
         RESET: {
           target: 'idle',
-          actions: assign({
-            originalImage: undefined,
-            currentImage: undefined,
-            history: [],
-            lastError: undefined,
-            currentPrompt: undefined,
-            analysisResult: undefined,
-            generationResult: undefined,
-          }),
+          actions: [
+            assign({
+              originalImage: undefined,
+              currentImage: undefined,
+              history: [],
+              lastError: undefined,
+              currentPrompt: undefined,
+              analysisResult: undefined,
+              generationResult: undefined,
+            }),
+            'logTransition',
+          ],
         },
         RETRY: {
           target: 'processing_edit',
+          actions: ['logTransition'],
         },
       },
+    },
+  },
+}).provide({
+  actions: {
+    logTransition: ({ context, event }) => {
+      console.log('[State Machine] Transition:', event.type, 'context:', {
+        currentImage: context.currentImage ? 'present' : 'absent',
+        currentPrompt: context.currentPrompt,
+        state: '???'
+      });
+    },
+    logStateEntry: ({ context }) => {
+      console.log('[State Machine] Entering state, context:', {
+        currentImage: context.currentImage ? 'present' : 'absent',
+        currentPrompt: context.currentPrompt,
+      });
     },
   },
 });
