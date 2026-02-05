@@ -3,6 +3,14 @@
 
 A pipeline for suggesting and applying contextual edits to an AI generated images.
 
+# Requirements
+
+## Environment variables
+
+1. Create a `.env` file
+2. Add `NANO_BANANA_API_KEY` and get API key fro https://aistudio.google.com/app/api-keys
+
+
 ## Future 
 
 It would be good to an initial analysis of the uploaded image using something like Meta SAM (https://huggingface.co/facebook/sam3), do segmentation and object detection. From this, we can provide the user with some relevant editing suggestions. 
