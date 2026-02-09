@@ -15,6 +15,10 @@ A pipeline for suggesting and applying contextual edits to an AI generated image
 
 It would be good to an initial analysis of the uploaded image using something like Meta SAM (https://huggingface.co/facebook/sam3), do segmentation and object detection. From this, we can provide the user with some relevant editing suggestions. 
 
+# Architecture
+
+![architecture](architecture.png)
+
 # Discussion points
 
  * Why did you choose the AI tools/Saases that you chose? What are the tradeoffs, and are there alternatives to consider?

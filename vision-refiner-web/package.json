@@ -51,6 +51,7 @@
 		"vitest-browser-svelte": "^2.0.2"
 	},
 	"dependencies": {
+		"@friendofsvelte/state": "0.0.6-ts",
 		"@google/genai": "^1.40.0",
 		"@xstate/svelte": "^5.0.0",
 		"xstate": "^5.26.0"
