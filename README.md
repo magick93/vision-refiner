@@ -3,6 +3,17 @@
 
 A pipeline for suggesting and applying contextual edits to an AI generated images.
 
+# To run
+
+1. `cd vision-refiner-web` and `pnpm i`.
+2. `pnpm dev` and navigate to the presented url.
+
+# Why a web ui and not a cli?
+
+I decided to go with a web interface purely for the DX. If I was working on a purely LLM based (text based request and response) the a cli would be the ideal DX. But as I decided to go with Option 4 - the image enhancement challenge - getting easy visual response is best done through a UI. 
+
+Also, while I could have used something like Jupyter or Marimo, I wanted to use xstate.js as this is a very useful, easy to work with, finite state machine. 
+
 # Requirements
 
 ## Environment variables
